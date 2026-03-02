@@ -430,7 +430,7 @@ def page_dashboard():
         if st.button("📄 Generate Professional Advisory Report", use_container_width=True, type="secondary"):
             with st.spinner("👨‍💼 Agricultural Land Investment Advisor is Preparing Your Report..."):
                 report = generate_advisory_report(
-                    res['district'], res['year'], res['base_price'],
+                    res['district'], res['year'], res['final_price'],
                     res['soil_data'], res['user_inputs']
                 )
                 st.session_state['advisory_report'] = report
