@@ -152,7 +152,7 @@ Generate a professional LAND VALUATION REPORT for:
 
 District: {district}
 Year: {year}
-Predicted Price: ₹{predicted_price:,.0f} per acre
+Generated Price: ₹{predicted_price:,.0f} per acre
 
 Soil Data:
 Zinc: {soil_data['Zn_%']}%
