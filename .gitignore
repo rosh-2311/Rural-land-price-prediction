@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.venv/
+# district_encoder.pkl
+# land_price_model.pkl
+# feedback_sheet.csv
+# users.json
+Project Model.zip
