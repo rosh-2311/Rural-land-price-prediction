@@ -25,8 +25,8 @@ if not API_KEY:
 # Configure Gemini with new SDK
 client = genai.Client(api_key=API_KEY)
 
-# Use gemini-2.5-pro
-MODEL_NAME = "gemini-2.5-pro"
+# Use gemini-2.5-flash
+MODEL_NAME = "gemini-2.5-flash"
 
 
 def _generate_with_retry(prompt, max_retries=3):
