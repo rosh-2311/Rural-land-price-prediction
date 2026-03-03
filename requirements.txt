@@ -4,5 +4,5 @@ joblib
 scikit-learn
 xgboost
 python-dotenv
-google-generativeai
+google-genai
 matplotlib
