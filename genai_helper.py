@@ -1,8 +1,10 @@
 import json
 import re
 import os
+import time
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # Load .env for local development
 load_dotenv()
@@ -20,11 +22,30 @@ if not API_KEY:
 if not API_KEY:
     raise ValueError("❌ GOOGLE_API_KEY not found. Add it to Streamlit Cloud secrets or your .env file.")
 
-# Configure Gemini
-genai.configure(api_key=API_KEY)
+# Configure Gemini with new SDK
+client = genai.Client(api_key=API_KEY)
 
-# Use stable model
-model = genai.GenerativeModel("models/gemini-2.5-flash")
+# Use gemini-2.5-pro
+MODEL_NAME = "gemini-2.5-pro"
+
+
+def _generate_with_retry(prompt, max_retries=3):
+    """Call Gemini API with exponential backoff on quota errors."""
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            err = str(e)
+            if "429" in err and attempt < max_retries - 1:
+                wait_time = 60 * (attempt + 1)  # 60s, 120s, 180s
+                print(f"Rate limit hit. Retrying in {wait_time}s... (attempt {attempt+1}/{max_retries})")
+                time.sleep(wait_time)
+            else:
+                raise
 
 
 def validate_price_with_ai(district, base_price, soil_data, year, user_inputs):
@@ -110,8 +131,7 @@ Return ONLY a valid JSON object. Do not use Markdown backticks.
 """
 
     try:
-        response = model.generate_content(prompt)
-        text_output = response.text
+        text_output = _generate_with_retry(prompt)
         
         # Clean potential markdown wrapping
         text_output = re.sub(r"```json", "", text_output)
@@ -185,8 +205,7 @@ Make it like a professional advisory report. Use clear markdown formatting.
 Do not use markdown backticks for the outer block, just return the text.
 """
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        return _generate_with_retry(prompt)
     except Exception as e:
         return f"🚨 Advisory Report Generation Failed: {str(e)}"
 
@@ -216,8 +235,7 @@ def get_ai_advisor_response(mode, user_query=None, land_context=None):
         """
     
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        return _generate_with_retry(prompt)
     except Exception as e:
         return f"🚨 AI Advisor failed to process request: {str(e)}"
 
@@ -227,15 +245,19 @@ def get_chat_response(chat_history):
     chat_history: list of dicts with {"role": "user/assistant", "content": "text"}
     """
     try:
-        # Convert history to Gemini format
-        gemini_history = []
-        for msg in chat_history[:-1]: # All but the last one
+        # Convert history to new SDK format
+        contents = []
+        for msg in chat_history:
             role = "user" if msg["role"] == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg["content"]]})
-        
-        chat = model.start_chat(history=gemini_history)
-        last_message = chat_history[-1]["content"]
-        response = chat.send_message(last_message)
+            contents.append(types.Content(
+                role=role,
+                parts=[types.Part(text=msg["content"])]
+            ))
+
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=contents
+        )
         return response.text
     except Exception as e:
         return f"🚨 Chat error: {str(e)}"
